@@ -1,0 +1,44 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function chatbot_theme($existing, $type, $theme, $path) {
+  return [
+    'chatbot_page' => [
+      'render element' => 'elements',
+      'template' => 'chatbot-page',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function chatbot_entity_insert(EntityInterface $entity) {
+
+  // Only react to Media entities.
+  if ($entity->getEntityTypeId() !== 'media') {
+    return;
+  }
+
+  // Only react to Document media.
+  if ($entity->bundle() !== 'document') {
+    return;
+  }
+
+  // Add the Media entity ID to the queue.
+  $queue = \Drupal::queue('chatbot_document_ingest');
+  $queue->createItem([
+    'media_id' => $entity->id(),
+  ]);
+
+  \Drupal::logger('chatbot')->notice(
+    'Queued Media ID @id for ingestion.',
+    [
+      '@id' => $entity->id(),
+    ]
+  );
+}
